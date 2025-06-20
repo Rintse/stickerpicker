@@ -1,5 +1,7 @@
 /.idea
 
+packs.txt
+
 out/
 /.venv
 /env

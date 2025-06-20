@@ -85,6 +85,8 @@ async def reupload_pack(client: TelegramClient, pack: StickerSetFull, output_dir
     out_dir = Path(f"out/{pack.set.short_name}")
     out_dir.mkdir(exist_ok=True)
 
+    done = []
+
     for sticker in pack.packs:
         for document_id in sticker.documents:
             if document_id in img_datas:
@@ -96,9 +98,12 @@ async def reupload_pack(client: TelegramClient, pack: StickerSetFull, output_dir
                     idx += 1
                     path = out_dir / Path(f"{sticker.emoticon}_{idx}.png")
 
-                print(f"saving {sticker.emoticon} to {path}")
-                with open(path, "wb") as f:
-                    _ = f.write(img_datas[document_id])
+                img_hash = hash(img_datas[document_id])
+                if img_hash not in done:
+                    print(f"saving {sticker.emoticon} to {path}")
+                    with open(path, "wb") as f:
+                        _ = f.write(img_datas[document_id])
+                    done.append(img_hash)
 
 
 pack_url_regex = re.compile(r"^(?:(?:https?://)?(?:t|telegram)\.(?:me|dog)/addstickers/)?"
