@@ -57,39 +57,20 @@ def add_meta(document: Document, info: matrix.StickerInfo, pack: StickerSetFull)
 
 
 async def reupload_pack(client: TelegramClient, pack: StickerSetFull, output_dir: str) -> None:
-    pack_path = os.path.join(output_dir, f"{pack.set.short_name}.json")
-    try:
-        os.mkdir(os.path.dirname(pack_path))
-    except FileExistsError:
-        pass
-
-    print(f"Reuploading {pack.set.title} with {pack.set.count} stickers "
-          f"and writing output to {pack_path}")
-
-    already_uploaded = {}
-    try:
-        with util.open_utf8(pack_path) as pack_file:
-            existing_pack = json.load(pack_file)
-            already_uploaded = {int(sticker["net.maunium.telegram.sticker"]["id"]): sticker
-                                for sticker in existing_pack["stickers"]}
-            print(f"Found {len(already_uploaded)} already reuploaded stickers")
-    except FileNotFoundError:
-        pass
-
-    stickers_data: Dict[str, bytes] = {}
-    reuploaded_documents: Dict[int, matrix.StickerInfo] = {}
-    img_datas: dict[int, bytes] = {}
-    for document in pack.documents:
-        img_datas[document.id] = await export_img(client, document)
-
     out_dir = Path(f"out/{pack.set.short_name}")
     if out_dir.exists():
         print(f"Skipping {pack.set.short_name}")
         return
     out_dir.mkdir(exist_ok=True)
 
-    done = []
+    print(f"downloading {pack.set.title} with {pack.set.count} stickers "
+          f"and writing output to {out_dir}")
 
+    img_datas: dict[int, bytes] = {}
+    for document in pack.documents:
+        img_datas[document.id] = await export_img(client, document)
+
+    done = []
     for sticker in pack.packs:
         for document_id in sticker.documents:
             if document_id in img_datas:
