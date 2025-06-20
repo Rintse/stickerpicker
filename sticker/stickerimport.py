@@ -83,6 +83,9 @@ async def reupload_pack(client: TelegramClient, pack: StickerSetFull, output_dir
         img_datas[document.id] = await export_img(client, document)
 
     out_dir = Path(f"out/{pack.set.short_name}")
+    if out_dir.exists():
+        print(f"Skipping {pack.set.short_name}")
+        return
     out_dir.mkdir(exist_ok=True)
 
     done = []
