@@ -30,15 +30,15 @@ from telethon.tl.types.messages import StickerSet as StickerSetFull
 from .lib import matrix, util
 
 
-async def export_img(client: TelegramClient, document: Document) -> bytes:
-    print(f"Saving {document.id}")
+async def export_img(client: TelegramClient, document: Document):
+    print(f"Reuploading {document.id}", end="", flush=True)
     data = await client.download_media(document, file=bytes)
+    print(".", end="", flush=True)
     data, width, height = util.convert_image(data)
-    return data
+    print(".", end="", flush=True)
     with open(f"{document.id}.png", "wb") as f:
-        f.write(data)
-        # w = png.Writer(size=(width, height), greyscale=False)
-        # w.write(f, [int (x) for x in data])
+        w = png.Writer(width, height, greyscale=False)
+        w.write(f, data)
 
 
 def add_meta(document: Document, info: matrix.StickerInfo, pack: StickerSetFull) -> None:
@@ -78,17 +78,40 @@ async def reupload_pack(client: TelegramClient, pack: StickerSetFull, output_dir
 
     stickers_data: Dict[str, bytes] = {}
     reuploaded_documents: Dict[int, matrix.StickerInfo] = {}
-    img_datas: dict[int, bytes] = {}
     for document in pack.documents:
-        img_datas[document.id] = await export_img(client, document)
+        try:
+            reuploaded_documents[document.id] = already_uploaded[document.id]
+            print(f"Skipped reuploading {document.id}")
+        except KeyError:
+            export_img(client, document)
+        # Always ensure the body and telegram metadata is correct
+        # add_meta(document, reuploaded_documents[document.id], pack)
+        # stickers_data[reuploaded_documents[document.id]["url"]] = data
 
-    for sticker in pack.packs:
-        if not sticker.emoticon:
-            continue
-        for document_id in sticker.documents:
-            if document_id in img_datas:
-                with open(f"out/{pack.set.short_name}/{sticker.emoticon}.png", "wb") as f:
-                    _ = f.write(img_datas[document_id])
+    # for sticker in pack.packs:
+    #     if not sticker.emoticon:
+    #         continue
+    #     for document_id in sticker.documents:
+    #         doc = reuploaded_documents[document_id]
+    #         # If there was no sticker metadata, use the first emoji we find
+    #         if doc["body"] == "":
+    #             doc["body"] = sticker.emoticon
+    #         doc["net.maunium.telegram.sticker"]["emoticons"].append(sticker.emoticon)
+
+    # with util.open_utf8(pack_path, "w") as pack_file:
+    #     json.dump({
+    #         "title": pack.set.title,
+    #         "id": f"tg-{pack.set.id}",
+    #         "net.maunium.telegram.pack": {
+    #             "short_name": pack.set.short_name,
+    #             "hash": str(pack.set.hash),
+    #         },
+    #         "stickers": list(reuploaded_documents.values()),
+    #     }, pack_file, ensure_ascii=False)
+    # print(f"Saved {pack.set.title} as {pack.set.short_name}.json")
+
+    # util.add_thumbnails(list(reuploaded_documents.values()), stickers_data, output_dir)
+    # util.add_to_index(os.path.basename(pack_path), output_dir)
 
 
 pack_url_regex = re.compile(r"^(?:(?:https?://)?(?:t|telegram)\.(?:me|dog)/addstickers/)?"

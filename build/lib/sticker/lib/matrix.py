@@ -57,15 +57,12 @@ async def load_config(path: str) -> None:
             access_token = config["access_token"]
     except FileNotFoundError:
         print("Matrix config file not found. Please enter your homeserver and access token.")
-        # homeserver_url = input("Homeserver URL: ")
-        # access_token = input("Access token: ")
-        homeserver_url = "http://test.lmao"
-        access_token = "lmao"
-        # whoami_url = URL(homeserver_url) / "_matrix" / "client" / "v3" / "account" / "whoami"
-        # if whoami_url.scheme not in ("https", "http"):
-        #     whoami_url = whoami_url.with_scheme("https")
-        # user_id = await whoami(whoami_url, access_token)
-        user_id = "mebitch"
+        homeserver_url = input("Homeserver URL: ")
+        access_token = input("Access token: ")
+        whoami_url = URL(homeserver_url) / "_matrix" / "client" / "v3" / "account" / "whoami"
+        if whoami_url.scheme not in ("https", "http"):
+            whoami_url = whoami_url.with_scheme("https")
+        user_id = await whoami(whoami_url, access_token)
         with open(path, "w") as config_file:
             json.dump({
                 "homeserver": homeserver_url,
