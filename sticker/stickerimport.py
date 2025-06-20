@@ -18,7 +18,7 @@ import argparse
 import asyncio
 import os.path
 import json
-import png
+from pathlib import Path
 import re
 
 from telethon import TelegramClient
@@ -31,7 +31,7 @@ from .lib import matrix, util
 
 
 async def export_img(client: TelegramClient, document: Document) -> bytes:
-    print(f"Saving {document.id}")
+    print(f"Downloading {document.id}")
     data = await client.download_media(document, file=bytes)
     data, width, height = util.convert_image(data)
     return data
@@ -82,12 +82,22 @@ async def reupload_pack(client: TelegramClient, pack: StickerSetFull, output_dir
     for document in pack.documents:
         img_datas[document.id] = await export_img(client, document)
 
+    out_dir = Path(f"out/{pack.set.short_name}")
+    out_dir.mkdir(exist_ok=True)
+
     for sticker in pack.packs:
-        if not sticker.emoticon:
-            continue
         for document_id in sticker.documents:
             if document_id in img_datas:
-                with open(f"out/{pack.set.short_name}/{sticker.emoticon}.png", "wb") as f:
+                path = out_dir / Path(f"{sticker.emoticon}.png")
+
+                # Deduplicate emojis
+                idx = 0
+                while path.exists():
+                    idx += 1
+                    path = out_dir / Path(f"{sticker.emoticon}_{idx}.png")
+
+                print(f"saving {sticker.emoticon} to {path}")
+                with open(path, "wb") as f:
                     _ = f.write(img_datas[document_id])
 
 
